@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Screenshot Analyzer - Shortcuts</title>
+    <style>
+        body {
+            width: 300px;
+            padding: 15px;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        li {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        kbd {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            padding: 2px 6px;
+            margin-right: 8px;
+            font-family: monospace;
+        }
+        
+        .tip {
+            background: #e1f5fe;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h2>Quick Access Shortcuts</h2>
+    <ul id="shortcut-list"></ul>
+    
+    <div class="tip">
+        <strong>Tip:</strong> You can also right-click anywhere on a page to access the analyzer from the context menu.
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
