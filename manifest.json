@@ -16,10 +16,11 @@
     ],
     "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
     "background": {
-      "scripts": ["background.js"]
+      "scripts": ["debug.js", "compatibility.js", "background.js"],
+      "persistent": true
     },
     "browser_action": {
-      "default_title": "AI Screenshot Analyzer (Ctrl+Shift+Q)",
+      "default_title": "AI Screenshot Analyzer (Option+S/Alt+S)",
       "default_popup": "popup.html",
       "default_icon": {
         "16": "icons/icon16.png",
@@ -31,7 +32,7 @@
       "_execute_browser_action": {
         "suggested_key": {
           "default": "Ctrl+Shift+Q",
-          "mac": "MacCtrl+Shift+Q"
+          "mac": "Command+Shift+Q"
         },
         "description": "Activate Screenshot Analyzer"
       },
@@ -54,17 +55,27 @@
       "selector.css",
       "selector.js",
       "html2canvas.min.js",
+      "debug.js",
       "icons/*"
     ],
     "options_ui": {
       "page": "options/index.html",
-      "browser_style": true
+      "browser_style": true,
+      "open_in_tab": true
     },
     "content_scripts": [
       {
-        "matches": ["<all_urls>"],
-        "js": ["content-script.js"],
-        "run_at": "document_idle"
+        "matches": ["<all_urls>", "*://*/*"],
+        "js": ["debug.js", "content-script.js"],
+        "run_at": "document_idle",
+        "all_frames": false,
+        "match_about_blank": false
       }
-    ]
+    ],
+    "applications": {
+      "gecko": {
+        "id": "screenshot-analyzer@example.com",
+        "strict_min_version": "57.0"
+      }
+    }
   }

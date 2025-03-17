@@ -1,4 +1,17 @@
 // background.js
+
+// Fix for Firefox/Chrome compatibility
+const browser = window.browser || window.chrome;
+
+// Detect browser type for Firefox-specific behaviors
+const isFirefox = typeof InstallTrigger !== 'undefined';
+
+// Initialize debug logging
+if (window.ExtDebug) {
+  ExtDebug.info("Background script initialized");
+  ExtDebug.info("Browser detection:", isFirefox ? "Firefox" : "Chrome");
+}
+
 let activeTabId = null;
 
 // Add caching for analysis results
@@ -9,20 +22,23 @@ async function initScreenshotTool(tab, options = {}) {
   activeTabId = tab.id;
   
   try {
+    if (window.ExtDebug) ExtDebug.info("Initializing screenshot tool for tab:", tab.id, "URL:", tab.url);
+    
     // Get API key - use the Gemini API key if no user key is set
     const settings = await browser.storage.local.get('apiKey');
-    const apiKey = settings.apiKey || "AIzaSyD839Zbz0FyWZ6xMGRuM4VdLblnpoQkEig";
+    const apiKey = settings.apiKey || "AIzaSyCkky5PQnc11vcZhX6t2M7jlDNqWFPB91k";
 
     if (!apiKey) {
       // Open options page if API key isn't set
       browser.runtime.openOptionsPage();
       // Use notifications if message sending fails (tab might not be ready)
       try {
-      browser.tabs.sendMessage(tab.id, {
-        action: "showNotification",
-        message: "Please set your API key in the extension options first"
-      });
+        browser.tabs.sendMessage(tab.id, {
+          action: "showNotification",
+          message: "Please set your API key in the extension options first"
+        });
       } catch (e) {
+        if (window.ExtDebug) ExtDebug.error("Failed to send notification to tab:", e);
         browser.notifications.create({
           type: "basic",
           title: "AI Screenshot Analyzer",
@@ -36,17 +52,92 @@ async function initScreenshotTool(tab, options = {}) {
     // Store the API key in storage for easy access
     await browser.storage.local.set({ apiKey });
     
-    // Inject required scripts and CSS
-    await browser.tabs.insertCSS(tab.id, { file: "selector.css" });
-    await browser.tabs.executeScript(tab.id, { file: "html2canvas.min.js" });
-    await browser.tabs.executeScript(tab.id, { file: "selector.js" });
+    // Firefox fix: Use try/catch for each injection separately with sequential loading
+    // Inject the debug script first to enable better logging
+    try {
+      if (window.ExtDebug) ExtDebug.info("Injecting debug.js...");
+      await browser.tabs.executeScript(tab.id, { file: "debug.js" });
+      if (window.ExtDebug) ExtDebug.info("Debug script injected successfully");
+    } catch (debugError) {
+      if (window.ExtDebug) ExtDebug.warn("Error injecting debug script:", debugError);
+      // Continue anyway as debug is optional
+    }
+    
+    // Add a small delay for Firefox to ensure scripts are properly initialized
+    if (isFirefox) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    try {
+      if (window.ExtDebug) ExtDebug.info("Injecting CSS...");
+      await browser.tabs.insertCSS(tab.id, { file: "selector.css" });
+      if (window.ExtDebug) ExtDebug.info("CSS injected successfully");
+    } catch (cssError) {
+      if (window.ExtDebug) ExtDebug.error("Error injecting CSS:", cssError);
+      // Continue anyway as this may not be fatal
+    }
+    
+    if (isFirefox) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    try {
+      if (window.ExtDebug) ExtDebug.info("Injecting html2canvas...");
+      await browser.tabs.executeScript(tab.id, { file: "html2canvas.min.js" });
+      if (window.ExtDebug) ExtDebug.info("html2canvas injected successfully");
+    } catch (htmlCanvasError) {
+      if (window.ExtDebug) ExtDebug.error("Error injecting html2canvas:", htmlCanvasError);
+      throw new Error("Failed to inject HTML2Canvas: " + htmlCanvasError.message);
+    }
+    
+    if (isFirefox) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    try {
+      if (window.ExtDebug) ExtDebug.info("Injecting selector script...");
+      await browser.tabs.executeScript(tab.id, { file: "selector.js" });
+      if (window.ExtDebug) ExtDebug.info("Selector script injected successfully");
+    } catch (selectorError) {
+      if (window.ExtDebug) ExtDebug.error("Error injecting selector script:", selectorError);
+      throw new Error("Failed to inject selector script: " + selectorError.message);
+    }
+    
+    // Add a small delay before sending the startSelection message (especially for Firefox)
+    await new Promise(resolve => setTimeout(resolve, isFirefox ? 100 : 50));
     
     // Start selection mode
-    browser.tabs.sendMessage(tab.id, {
-      action: "startSelection"
-    });
+    if (window.ExtDebug) ExtDebug.info("Starting selection mode...");
+    
+    try {
+      const response = await browser.tabs.sendMessage(tab.id, {
+        action: "startSelection"
+      });
+      if (window.ExtDebug) ExtDebug.info("Selection started successfully, response:", response);
+    } catch (error) {
+      if (window.ExtDebug) ExtDebug.error("Error sending startSelection message:", error);
+      
+      // If on Firefox, try a second attempt with a longer delay
+      if (isFirefox) {
+        if (window.ExtDebug) ExtDebug.info("Retrying on Firefox with longer delay...");
+        await new Promise(resolve => setTimeout(resolve, 300));
+        try {
+          const retryResponse = await browser.tabs.sendMessage(tab.id, {
+            action: "startSelection"
+          });
+          if (window.ExtDebug) ExtDebug.info("Selection started on retry, response:", retryResponse);
+        } catch (retryError) {
+          if (window.ExtDebug) ExtDebug.error("Error on second attempt:", retryError);
+          throw new Error("Failed to start selection mode after multiple attempts: " + retryError.message);
+        }
+      } else {
+        throw new Error("Failed to start selection mode: " + error.message);
+      }
+    }
+    
+    if (window.ExtDebug) ExtDebug.info("Screenshot tool initialized successfully");
   } catch (error) {
-    console.error("Error initializing screenshot tool:", error);
+    if (window.ExtDebug) ExtDebug.error("Error initializing screenshot tool:", error);
     browser.notifications.create({
       type: "basic",
       title: "Screenshot Analyzer Error",
@@ -57,10 +148,14 @@ async function initScreenshotTool(tab, options = {}) {
 }
 
 // Handle browser action (toolbar button click)
-browser.browserAction.onClicked.addListener(initScreenshotTool);
+browser.browserAction.onClicked.addListener((tab) => {
+  if (window.ExtDebug) ExtDebug.info("Browser action clicked for tab:", tab.id);
+  initScreenshotTool(tab);
+});
 
 // Handle different activation methods
 browser.commands.onCommand.addListener((command) => {
+    if (window.ExtDebug) ExtDebug.info(`Command received: ${command}`);
     switch (command) {
         case "start-screenshot-analyzer":
             // Quick analysis mode
@@ -86,26 +181,110 @@ browser.commands.onCommand.addListener((command) => {
 
 // Listen for messages from content script
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (window.ExtDebug) ExtDebug.info("Message received:", message.action, "from:", sender.tab ? sender.tab.id : "unknown");
+  
+  // Handle content script ready message
+  if (message.action === "contentScriptReady") {
+    if (window.ExtDebug) ExtDebug.info("Content script is ready in tab:", sender.tab?.id);
+    return Promise.resolve({ success: true });
+  }
+  
+  // Handle keyboard shortcut activation from content script
+  if (message.action === "activateScreenshotTool") {
+    if (window.ExtDebug) ExtDebug.info("Received activation request:", message);
+    
+    // Handle activation from popup button
+    if (message.source === "popupButton" && message.tabId) {
+      browser.tabs.get(message.tabId)
+        .then(tab => {
+          if (window.ExtDebug) ExtDebug.info("Activating from popup button for tab:", tab.id);
+          initScreenshotTool(tab, { quickMode: true });
+        })
+        .catch(error => {
+          if (window.ExtDebug) ExtDebug.error("Error getting tab:", error);
+        });
+      return Promise.resolve({ success: true });
+    }
+    
+    // Handle activation from content script
+    if (message.source === "keyboardShortcut" && sender.tab) {
+      if (window.ExtDebug) ExtDebug.info("Activating from keyboard shortcut for tab:", sender.tab.id);
+      initScreenshotTool(sender.tab, { quickMode: true });
+      return Promise.resolve({ success: true });
+    }
+  }
+
   if (message.action === "captureComplete") {
-    console.log("Received capture complete message, starting analysis");
+    if (window.ExtDebug) ExtDebug.info("Received capture complete message, starting analysis");
     analyzeScreenshot(message.data)
       .then(result => {
-        console.log("Analysis complete, sending results back");
+        if (window.ExtDebug) ExtDebug.info("Analysis complete, sending results back");
         browser.tabs.sendMessage(sender.tab.id, {
           action: "analysisResult",
           result: result,
           screenshot: message.data.dataUrl
+        }).catch(err => {
+          if (window.ExtDebug) ExtDebug.error("Error sending analysis results:", err);
+          // Try to send error notification if possible
+          try {
+            browser.tabs.sendMessage(sender.tab.id, {
+              action: "analysisError",
+              error: "Failed to send results: " + err.message
+            });
+          } catch (notifyErr) {
+            if (window.ExtDebug) ExtDebug.error("Failed to send error notification:", notifyErr);
+          }
         });
       })
       .catch(error => {
-        console.error("Analysis failed:", error);
+        if (window.ExtDebug) ExtDebug.error("Analysis failed:", error);
         browser.tabs.sendMessage(sender.tab.id, {
           action: "analysisError",
           error: error.message
+        }).catch(err => {
+          if (window.ExtDebug) ExtDebug.error("Failed to send error notification:", err);
         });
       });
     return true; // Indicates async response
   }
+  
+  // Handle follow-up questions
+  if (message.action === "askFollowUpQuestion") {
+    // Make sure we have an active tab and a valid question
+    if (!activeTabId || !message.question) {
+      if (window.ExtDebug) ExtDebug.warn("Invalid follow-up question request");
+      return Promise.resolve({
+        error: "Unable to process question. Please try again."
+      });
+    }
+
+    // Get the last screenshot and analysis from cache
+    const cachedAnalysis = analysisCache.get(activeTabId);
+    if (!cachedAnalysis) {
+      if (window.ExtDebug) ExtDebug.warn("No cached analysis found for tab:", activeTabId);
+      return Promise.resolve({
+        error: "No previous analysis found. Please take a new screenshot first."
+      });
+    }
+
+    if (window.ExtDebug) ExtDebug.info("Processing follow-up question:", message.question);
+    
+    // Send the question to Gemini with the image
+    return askGeminiQuestion(message.question, cachedAnalysis.imageDataUrl, cachedAnalysis.analysis)
+      .then(answer => {
+        if (window.ExtDebug) ExtDebug.info("Received answer from Gemini API");
+        return { answer };
+      })
+      .catch(error => {
+        if (window.ExtDebug) ExtDebug.error("Error asking follow-up question:", error);
+        return {
+          error: "Failed to get answer: " + error.message
+        };
+      });
+  }
+  
+  // Fallback response for unhandled messages
+  return false;
 });
 
 // Add this message handler to your existing listeners
