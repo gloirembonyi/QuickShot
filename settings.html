@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QuickShot - Settings</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --primary-dark: #0d47a1;
+            --primary-light: #e8f0fe;
+            --surface-color: #ffffff;
+            --surface-variant: #f8f9fa;
+            --on-surface: #202124;
+            --on-surface-variant: #5f6368;
+            --outline: #dadce0;
+            --success-color: #34a853;
+            --error-color: #ea4335;
+            --warning-color: #fbbc05;
+            --shadow-1: 0 1px 3px rgba(60,64,67,0.16), 0 1px 2px rgba(60,64,67,0.24);
+            --shadow-2: 0 2px 6px rgba(60,64,67,0.15), 0 1px 2px rgba(60,64,67,0.3);
+            --border-radius: 8px;
+            --transition: all 0.2s ease;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #8ab4f8;
+                --primary-dark: #669df6;
+                --primary-light: #27323f;
+                --surface-color: #202124;
+                --surface-variant: #303134;
+                --on-surface: #e8eaed;
+                --on-surface-variant: #9aa0a6;
+                --outline: #5f6368;
+                --success-color: #81c995;
+                --error-color: #f28b82;
+                --warning-color: #fdd663;
+            }
+        }
+        
+        body {
+            font-family: 'Google Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--surface-color);
+            color: var(--on-surface);
+            line-height: 1.6;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            gap: 16px;
+        }
+        
+        .header .logo {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 500;
+            margin: 0;
+        }
+        
+        .section {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-1);
+            border: 1px solid var(--outline);
+        }
+        
+        .section-title {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--on-surface);
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--outline);
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--on-surface);
+        }
+        
+        .form-input {
+            display: block;
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-family: inherit;
+            border: 1px solid var(--outline);
+            border-radius: var(--border-radius);
+            background: var(--surface-color);
+            color: var(--on-surface);
+            transition: var(--transition);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+        
+        .form-help {
+            font-size: 12px;
+            color: var(--on-surface-variant);
+            margin-top: 6px;
+        }
+        
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .toggle-label {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--on-surface);
+            cursor: pointer;
+        }
+        
+        .toggle-label span {
+            font-weight: 500;
+        }
+        
+        .toggle-label small {
+            color: var(--on-surface-variant);
+            font-weight: normal;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+            margin-left: 12px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--outline);
+            transition: .4s;
+            border-radius: 20px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(16px);
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .button {
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .button-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .button-primary:hover {
+            background-color: var(--primary-dark);
+            box-shadow: var(--shadow-1);
+        }
+        
+        .button-secondary {
+            background-color: var(--surface-variant);
+            color: var(--on-surface-variant);
+        }
+        
+        .button-secondary:hover {
+            background-color: var(--outline);
+        }
+        
+        .button-danger {
+            background-color: var(--error-color);
+            color: white;
+        }
+        
+        .button-danger:hover {
+            background-color: #d32f2f;
+            box-shadow: var(--shadow-1);
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--on-surface);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-2);
+            z-index: 10000;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            background: var(--success-color);
+        }
+        
+        .toast.error {
+            background: var(--error-color);
+        }
+        
+        .select-wrapper {
+            position: relative;
+        }
+        
+        .select-wrapper::after {
+            content: '▼';
+            font-size: 12px;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--on-surface-variant);
+            pointer-events: none;
+        }
+        
+        select.form-input {
+            appearance: none;
+            padding-right: 30px;
+        }
+        
+        .settings-footer {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--on-surface-variant);
+            font-size: 13px;
+        }
+        
+        .settings-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .settings-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <h1>QuickShot Settings</h1>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">API Configuration</h2>
+            
+            <div class="form-group">
+                <label for="api-key" class="form-label">API Key</label>
+                <input type="text" id="api-key" class="form-input" placeholder="Enter your API key">
+                <div class="form-help">Used for AI image analysis. Keep this private and secure.</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="api-model" class="form-label">AI Model</label>
+                <div class="select-wrapper">
+                    <select id="api-model" class="form-input">
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Default)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (More detailed)</option>
+                        <option value="gemini-1.0">Gemini 1.0 (Legacy)</option>
+                    </select>
+                </div>
+                <div class="form-help">Select the AI model to use for image analysis.</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Capture Settings</h2>
+            
+            <div class="form-row">
+                <label class="toggle-label" for="auto-analyze">
+                    <div>
+                        <span>Auto-analyze screenshots</span>
+                        <small>Automatically analyze screenshots when captured</small>
+                    </div>
+                </label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-analyze" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div class="form-row">
+                <label class="toggle-label" for="auto-save">
+                    <div>
+                        <span>Save screenshots automatically</span>
+                        <small>Keep screenshots in history</small>
+                    </div>
+                </label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-save" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div class="form-row">
+                <label class="toggle-label" for="show-toolbar">
+                    <div>
+                        <span>Show tools during capture</span>
+                        <small>Display a toolbar with capture options</small>
+                    </div>
+                </label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="show-toolbar" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">History Settings</h2>
+            
+            <div class="form-group">
+                <label for="history-size" class="form-label">Maximum history size</label>
+                <div class="select-wrapper">
+                    <select id="history-size" class="form-input">
+                        <option value="25">25 items</option>
+                        <option value="50" selected>50 items</option>
+                        <option value="100">100 items</option>
+                        <option value="200">200 items</option>
+                    </select>
+                </div>
+                <div class="form-help">Set how many screenshots to keep in your history.</div>
+            </div>
+            
+            <div class="form-row">
+                <label class="toggle-label" for="auto-clean">
+                    <div>
+                        <span>Auto-clean old screenshots</span>
+                        <small>Remove screenshots older than the selected period</small>
+                    </div>
+                </label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-clean">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label for="clean-period" class="form-label">Auto-clean period</label>
+                <div class="select-wrapper">
+                    <select id="clean-period" class="form-input" disabled>
+                        <option value="7">7 days</option>
+                        <option value="30" selected>30 days</option>
+                        <option value="90">90 days</option>
+                        <option value="365">1 year</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button id="clear-history" class="button button-danger">Clear All History</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Interface Settings</h2>
+            
+            <div class="form-row">
+                <label class="toggle-label" for="dark-mode">
+                    <div>
+                        <span>Dark mode</span>
+                        <small>Override system theme settings</small>
+                    </div>
+                </label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="dark-mode">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div class="form-row">
+                <label class="toggle-label" for="show-tooltips">
+                    <div>
+                        <span>Show tooltips</span>
+                        <small>Display helpful tooltips on hover</small>
+                    </div>
+                </label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="show-tooltips" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button id="reset-settings" class="button button-secondary">Reset to Defaults</button>
+            <button id="save-settings" class="button button-primary">Save Settings</button>
+        </div>
+        
+        <div class="settings-footer">
+            <p>QuickShot v1.2.0 | <a href="#" id="open-help">Help</a> | <a href="#" id="privacy-policy">Privacy Policy</a></p>
+        </div>
+    </div>
+    
+    <div id="toast" class="toast"></div>
+    
+    <script src="settings.js"></script>
+</body>
+</html> 

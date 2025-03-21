@@ -1,0 +1,70 @@
+{
+    "manifest_version": 2,
+    "name": "AI Screenshot Analyzer",
+    "version": "1.0",
+    "description": "Select screen areas to analyze with AI and get instant results",
+    "permissions": [
+      "activeTab",
+      "tabs",
+      "storage",
+      "<all_urls>",
+      "clipboardWrite",
+      "notifications",
+      "contextMenus",
+      "downloads",
+      "webNavigation"
+    ],
+    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+    "background": {
+      "scripts": ["background.js"]
+    },
+    "browser_action": {
+      "default_title": "AI Screenshot Analyzer (Ctrl+Shift+Q)",
+      "default_popup": "popup.html",
+      "default_icon": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+      }
+    },
+    "commands": {
+      "_execute_browser_action": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+Q",
+          "mac": "MacCtrl+Shift+Q"
+        },
+        "description": "Activate Screenshot Analyzer"
+      },
+      "start-screenshot-analyzer": {
+        "suggested_key": {
+          "default": "Alt+S",
+          "mac": "Alt+S"
+        },
+        "description": "Quick Screenshot Analysis"
+      },
+      "start-screenshot-area": {
+        "suggested_key": {
+          "default": "Alt+A",
+          "mac": "Alt+A"
+        },
+        "description": "Start Area Selection"
+      }
+    },
+    "web_accessible_resources": [
+      "selector.css",
+      "selector.js",
+      "html2canvas.min.js",
+      "icons/*"
+    ],
+    "options_ui": {
+      "page": "options/index.html",
+      "browser_style": true
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["content-script.js"],
+        "run_at": "document_idle"
+      }
+    ]
+  }
