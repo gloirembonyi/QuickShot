@@ -148,6 +148,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   
+  if (message.action === "extensionClosed") {
+    // Handle extension closed event
+    console.log("Extension was closed by user");
+    // Reset the active tab
+    activeTabId = null;
+    return true;
+  }
+  
   if (message.action === "openSettings") {
     // Open the extension settings page
     browser.runtime.openOptionsPage();

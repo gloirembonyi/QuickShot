@@ -64,6 +64,20 @@
       overlay.className = 'screenshot-selector-overlay';
       document.body.appendChild(overlay);
       
+      // Add global close button
+      const globalCloseBtn = document.createElement('div');
+      globalCloseBtn.className = 'screenshot-global-close';
+      globalCloseBtn.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      `;
+      globalCloseBtn.title = "Close QuickShot (ESC)";
+      globalCloseBtn.addEventListener('click', closeExtension);
+      document.body.appendChild(globalCloseBtn);
+      
       // Add animated instructions
       instructions = document.createElement('div');
       instructions.className = 'screenshot-instructions';
@@ -191,17 +205,38 @@
       
       // Position coordinates display
       const viewportHeight = window.innerHeight;
-      const selectionTop = Math.min(startY, endY);
+      const viewportWidth = window.innerWidth;
       
-      if (selectionTop > 40) {
-        // Show above selection if there's room
-        coordsDisplay.style.top = (selectionTop - 30) + 'px';
+      // Calculate the selection's bounds
+      const selectionTop = Math.min(startY, endY);
+      const selectionLeft = Math.min(startX, endX);
+      const selectionBottom = Math.max(startY, endY);
+      
+      // Get the dimensions of the coordinates display
+      const coordsRect = coordsDisplay.getBoundingClientRect();
+      const coordsWidth = coordsRect.width || 200; // Fallback if not yet in DOM
+      const coordsHeight = coordsRect.height || 30; // Fallback if not yet in DOM
+      
+      // Decide whether to position above or below the selection
+      let coordsTop;
+      if (selectionTop > coordsHeight + 10) {
+        // Position above the selection if there's enough space
+        coordsTop = selectionTop - coordsHeight - 10;
+      } else if (selectionBottom + coordsHeight + 10 < viewportHeight) {
+        // Position below the selection if there's enough space
+        coordsTop = selectionBottom + 10;
       } else {
-        // Show below selection
-        coordsDisplay.style.top = (Math.max(startY, endY) + 10) + 'px';
+        // Position inside the selection if possible
+        coordsTop = selectionTop + 10;
       }
       
-      coordsDisplay.style.left = Math.min(startX, endX) + 'px';
+      // Calculate horizontal position, preventing it from going off-screen
+      const idealLeft = selectionLeft;
+      const coordsLeft = Math.min(idealLeft, viewportWidth - coordsWidth - 10);
+      
+      // Apply positions
+      coordsDisplay.style.top = `${coordsTop}px`;
+      coordsDisplay.style.left = `${coordsLeft}px`;
     }
     
     // Handle mouse up event to complete selection
@@ -228,13 +263,25 @@
     
     // Handle key press events
     function handleKeyPress(e) {
+      console.log("Key pressed:", e.key);
+
+      // Prevent default actions for specific keys
+      if (['Escape', 'Enter', 'r', 'R', '?'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
       if (e.key === 'Escape') {
-        cleanup();
+        console.log("Escape pressed - closing extension");
+        closeExtension();
       } else if (e.key === 'Enter' && selection && selection.style.display !== 'none') {
+        console.log("Enter pressed - analyzing selection");
         captureAndAnalyze();
       } else if (e.key === 'r' || e.key === 'R') {
+        console.log("R pressed - resetting selection");
         resetSelection();
       } else if (e.key === '?') {
+        console.log("? pressed - showing help");
         showShortcutsHelp();
       }
     }
@@ -255,20 +302,22 @@
       // Calculate optimal position for controls
       const selectionRect = selection.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
       
       // Position controls below or above the selection
       if (selectionRect.bottom + 60 < viewportHeight) {
-        controls.style.left = selectionRect.left + 'px';
+        controls.style.left = Math.min(selectionRect.left, viewportWidth - 320) + 'px'; // Prevent overflow
         controls.style.top = (selectionRect.bottom + 10) + 'px';
       } else {
-        controls.style.left = selectionRect.left + 'px';
-        controls.style.top = (selectionRect.top - 50) + 'px';
+        controls.style.left = Math.min(selectionRect.left, viewportWidth - 320) + 'px'; // Prevent overflow
+        controls.style.top = (selectionRect.top - 60) + 'px';
       }
       
       // Create accept (Analyze) button
       const acceptBtn = document.createElement('button');
       acceptBtn.className = 'screenshot-button screenshot-accept';
-      acceptBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Analyze';
+      acceptBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Analyze with AI';
+      acceptBtn.title = "Analyze this area with QuickShot AI (Enter)";
       acceptBtn.addEventListener('click', () => {
         console.log("Analyze button clicked");
         captureAndAnalyze();
@@ -277,28 +326,35 @@
       // Create refresh button
       const refreshBtn = document.createElement('button');
       refreshBtn.className = 'screenshot-button screenshot-refresh';
-      refreshBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path></svg> Redraw';
+      refreshBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path></svg> New Selection';
+      refreshBtn.title = "Start a new selection (R)";
       refreshBtn.addEventListener('click', () => {
-        console.log("Redraw button clicked");
+        console.log("New selection button clicked");
         resetSelection();
-        createSelectionUI();
       });
       
-      // Create close button
-      const closeBtn = document.createElement('button');
-      closeBtn.className = 'screenshot-button screenshot-close';
-      closeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Cancel';
-      closeBtn.addEventListener('click', () => {
-        console.log("Close button clicked");
+      // Create cancel button
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'screenshot-button screenshot-close';
+      cancelBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Cancel';
+      cancelBtn.title = "Close screenshot tool (Esc)";
+      cancelBtn.addEventListener('click', () => {
+        console.log("Cancel button clicked");
         closeExtension();
       });
       
       // Add buttons to controls
       controls.appendChild(acceptBtn);
       controls.appendChild(refreshBtn);
-      controls.appendChild(closeBtn);
+      controls.appendChild(cancelBtn);
       
-      // Add controls to document
+      // Add tooltip to explain the controls
+      const tooltip = document.createElement('div');
+      tooltip.className = 'screenshot-controls-tooltip';
+      tooltip.textContent = "Press 'Analyze with AI' to process this selection.";
+      controls.appendChild(tooltip);
+      
+      // Add controls to the document
       document.body.appendChild(controls);
     }
     
@@ -378,7 +434,9 @@
         '.screenshot-loader',
         '.screenshot-error',
         '.screenshot-notification',
-        '.screenshot-results-modal'
+        '.screenshot-results-modal',
+        '.screenshot-global-close',
+        '.screenshot-controls-tooltip'
       ];
       
       elementsToRemove.forEach(selector => {
@@ -397,7 +455,7 @@
         
         if (!preserveOverlay) {
           overlay.remove();
-      overlay = null;
+          overlay = null;
         }
       }
       
@@ -1914,4 +1972,17 @@ Generated with AI Screenshot Analyzer
         showError("Error analyzing differences: " + error.message);
       });
     }
-  })();
+
+    // Function to fully close the extension
+    function closeExtension() {
+        console.log("Closing extension");
+        // Clean up all UI elements
+        cleanup(false);
+        // Notify anyone interested that we're closing
+        browser.runtime.sendMessage({
+            action: "extensionClosed"
+        }).catch(error => {
+            console.error("Error sending close message:", error);
+        });
+    }
+  })(); // This is the closing bracket for the IIFE

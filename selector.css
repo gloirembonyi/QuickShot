@@ -1489,3 +1489,44 @@
   .fadeOut {
     animation: fadeOut 0.25s ease forwards !important;
   }
+
+  /* Global close button */
+  .screenshot-global-close {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 999999;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .screenshot-global-close:hover {
+    background-color: rgba(231, 76, 60, 0.9);
+    transform: scale(1.1);
+  }
+
+  .screenshot-global-close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Controls tooltip */
+  .screenshot-controls-tooltip {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    padding: 6px 10px;
+    text-align: center;
+    width: 100%;
+  }
